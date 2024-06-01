@@ -1,0 +1,50 @@
+[
+  {
+    "name": "John Doe",
+    "age": 32,
+    "email": "john.doe@example.com",
+    "hobbies": [
+      "reading",
+      "hiking",
+      "photography"
+    ],
+    "address": {
+      "street": "123 Main St",
+      "city": "Anytown",
+      "state": "CA",
+      "zip": "12345"
+    }
+  },
+  {
+    "name": "Jane Smith",
+    "age": 27,
+    "email": "jane.smith@example.com",
+    "hobbies": [
+      "painting",
+      "gardening",
+      "cooking"
+    ],
+    "address": {
+      "street": "456 Oak Rd",
+      "city": "Elsewhere",
+      "state": "NY",
+      "zip": "67890"
+    }
+  },
+  {
+    "name": "Bob Johnson",
+    "age": 41,
+    "email": "bob.johnson@example.com",
+    "hobbies": [
+      "running",
+      "cycling",
+      "swimming"
+    ],
+    "address": {
+      "street": "789 Pine Ave",
+      "city": "Somewhereville",
+      "state": "TX",
+      "zip": "54321"
+    }
+  }
+]

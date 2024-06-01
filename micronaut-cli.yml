@@ -1,0 +1,6 @@
+applicationType: cli
+defaultPackage: com.jnlqcli
+testFramework: junit
+sourceLanguage: java
+buildTool: maven
+features: [app-name, graalvm, http-client, java, junit, maven, maven-enforcer-plugin, picocli, picocli-java-application, picocli-junit, properties, readme, security-annotations, security-jwt, serialization-jackson, shade, slf4j-simple]
