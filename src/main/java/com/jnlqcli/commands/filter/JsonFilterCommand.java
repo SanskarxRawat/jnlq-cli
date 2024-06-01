@@ -1,19 +1,24 @@
 package com.jnlqcli.commands.filter;
 
 
+import com.services.JsonService;
+import jakarta.inject.Inject;
 import picocli.CommandLine.*;
 
 @Command(name = "filter", description = "Filter the JSON data based on a key and value")
 final public class JsonFilterCommand implements Runnable {
 
     @Option(names = {"-k", "--key"}, description = "The key to filter on")
-    String key;
+    private String key;
 
     @Option(names = {"-v", "--value"}, description = "The value to filter on")
-    String value;
+    private String value;
+
+    @Inject
+    private JsonService jsonService;
 
     @Override
     public void run() {
-
+        jsonService.filter(key,value);
     }
 }

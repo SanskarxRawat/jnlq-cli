@@ -14,7 +14,7 @@ final public class JsonImportCommand implements Runnable{
     String filePath;
 
     @Option(names = {"--verbose"},description = "Print verbose output")
-    boolean verbose;
+    private Boolean verbose;
 
 
     @Override
