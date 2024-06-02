@@ -14,7 +14,9 @@ import java.nio.file.Paths;
 @Singleton
 public class JsonServiceImpl implements JsonService {
 
+
     private JsonNode importedJson;
+
     @Override
     public void importJson(String filePath) throws IOException {
         final ObjectMapper objectMapper=new ObjectMapper();
