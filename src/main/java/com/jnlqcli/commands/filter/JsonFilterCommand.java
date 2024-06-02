@@ -1,6 +1,7 @@
 package com.jnlqcli.commands.filter;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.services.JsonService;
 import jakarta.inject.Inject;
 import picocli.CommandLine.*;
@@ -19,6 +20,10 @@ final public class JsonFilterCommand implements Runnable {
 
     @Override
     public void run() {
-        jsonService.filter(key,value);
+        try {
+            jsonService.filter(key,value);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -19,12 +19,36 @@ public class JnlqCliCommandTest {
         System.setOut(new PrintStream(baos));
 
         try (ApplicationContext ctx = ApplicationContext.run(Environment.CLI, Environment.TEST)) {
-            String[] args = new String[] { "import","-p","C:\\Users\\DELL\\Desktop\\cli-project\\jnlq-cli\\jnlq-cli\\src\\main\\resources\\data.json" ,"--verbose"};
+            String[] args = new String[] { "filter","-key=name","-v=John Doe"};
             PicocliRunner.run(JnlqCliCommand.class, ctx, args);
             out.println();
             baos.toString();
             // jnlq-cli
-            assertTrue(baos.toString().contains("Import Command Running"));
+            assertTrue(baos.toString().contains("Filtered data:"));
+
+            String expectedOutput= """
+            {
+              "name": "John Doe",
+              "age": 30,
+              "email": "john.doe@example.com",
+              "addresses": [
+                {
+                  "street": "123 Main St",
+                  "city": "Anytown",
+                  "state": "CA",
+                  "zip": "12345"
+                },
+                {
+                  "street": "456 Oak Rd",
+                  "city": "Elsewhere",
+                  "state": "NY",
+                  "zip": "67890"
+                }
+              ]
+            }""";
+            System.out.println(baos.toString());
+            assertTrue(baos.toString().contains(expectedOutput));
+
         }
     }
 }

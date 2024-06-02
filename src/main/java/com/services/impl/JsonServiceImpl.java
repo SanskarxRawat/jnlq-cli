@@ -1,5 +1,6 @@
 package com.services.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.services.JsonService;
@@ -13,7 +14,26 @@ import java.nio.file.Paths;
 
 @Singleton
 public class JsonServiceImpl implements JsonService {
-
+    private static final String DEFAULT_JSON = """
+            {
+              "name": "Sanskar",
+              "age": 30,
+              "email": "john.doe@example.com",
+              "addresses": [
+                {
+                  "street": "123 Main St",
+                  "city": "Anytown",
+                  "state": "CA",
+                  "zip": "12345"
+                },
+                {
+                  "street": "456 Oak Rd",
+                  "city": "Elsewhere",
+                  "state": "NY",
+                  "zip": "67890"
+                }
+              ]
+            }""";
     private JsonNode importedJson;
     @Override
     public void importJson(String filePath) throws IOException {
@@ -39,7 +59,8 @@ public class JsonServiceImpl implements JsonService {
     }
 
     @Override
-    public void filter(String key, String value) {
+    public void filter(String key, String value) throws JsonProcessingException {
+        importedJson = new ObjectMapper().readTree(DEFAULT_JSON);
         JsonNode filteredData = JsonUtil.filterByKeyValue(importedJson, key, value);
         System.out.println("Filtered data:");
         System.out.println(filteredData.toPrettyString());
