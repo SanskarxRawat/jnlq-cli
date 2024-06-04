@@ -17,4 +17,10 @@ public interface JsonService {
     void filter(String key,String value) throws JsonProcessingException;
 
     void sort(String key,String order);
+
+    void prettify(String jsonInput);
+
+    void convert(String jsonInput,String format);
+
+    void validate(String jsonInput,String schemaFile);
 }

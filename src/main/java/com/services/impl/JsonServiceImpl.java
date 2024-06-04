@@ -73,4 +73,19 @@ public class JsonServiceImpl implements JsonService {
         System.out.println("Sorted data:");
         System.out.println(sortedData.toPrettyString());
     }
+
+    @Override
+    public void prettify(String jsonInput) {
+
+    }
+
+    @Override
+    public void convert(String jsonInput, String format) {
+
+    }
+
+    @Override
+    public void validate(String jsonInput, String schemaFile) {
+
+    }
 }
