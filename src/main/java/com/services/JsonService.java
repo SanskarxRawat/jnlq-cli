@@ -23,4 +23,11 @@ public interface JsonService {
     void convert(String jsonInput,String format);
 
     void validate(String jsonInput,String schemaFile);
+
+    void flatten(String jsonInput);
+
+    void unflatten(String jsonInput);
+
+    void query(String jsonInput,String path);
+
 }

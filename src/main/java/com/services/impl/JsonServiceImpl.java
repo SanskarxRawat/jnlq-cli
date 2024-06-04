@@ -88,4 +88,19 @@ public class JsonServiceImpl implements JsonService {
     public void validate(String jsonInput, String schemaFile) {
 
     }
+
+    @Override
+    public void flatten(String jsonInput) {
+
+    }
+
+    @Override
+    public void unflatten(String jsonInput) {
+
+    }
+
+    @Override
+    public void query(String jsonInput, String path) {
+
+    }
 }
