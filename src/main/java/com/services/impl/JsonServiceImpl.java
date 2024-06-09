@@ -1,8 +1,9 @@
 package com.services.impl;
 
+import com.beans.ObjectMapperBean;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.services.JsonService;
 import com.utils.JsonUtil;
 import jakarta.inject.Singleton;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Singleton
 public class JsonServiceImpl implements JsonService {
@@ -37,9 +39,8 @@ public class JsonServiceImpl implements JsonService {
     private JsonNode importedJson;
     @Override
     public void importJson(String filePath) throws IOException {
-        final ObjectMapper objectMapper=new ObjectMapper();
         byte[] jsonData = Files.readAllBytes(Paths.get(filePath));
-        importedJson = objectMapper.readTree(new String(jsonData, StandardCharsets.UTF_8));
+        importedJson = ObjectMapperBean.getInstance().readTree(new String(jsonData, StandardCharsets.UTF_8));
     }
 
     @Override
@@ -50,7 +51,7 @@ public class JsonServiceImpl implements JsonService {
     @Override
     public void search(String key, String value) {
 
-        JsonNode matchingNodes= JsonUtil.searchByKeyValue(importedJson,key,value);
+        JsonNode matchingNodes=JsonUtil.searchByKeyValue(importedJson,key,value);
         if(matchingNodes.isArray()){
             matchingNodes.forEach(System.out::println);
         }else {
@@ -60,7 +61,7 @@ public class JsonServiceImpl implements JsonService {
 
     @Override
     public void filter(String key, String value) throws JsonProcessingException {
-        importedJson = new ObjectMapper().readTree(DEFAULT_JSON);
+        importedJson = ObjectMapperBean.getInstance().readTree(DEFAULT_JSON);
         JsonNode filteredData = JsonUtil.filterByKeyValue(importedJson, key, value);
         System.out.println("Filtered data:");
         System.out.println(filteredData.toPrettyString());
@@ -76,12 +77,17 @@ public class JsonServiceImpl implements JsonService {
 
     @Override
     public void prettify(String jsonInput) {
-
+        JsonNode node=JsonUtil.parseJsonInput(jsonInput);
+        assert node != null;
+        String prettified=node.toPrettyString();
+        System.out.println(prettified);
     }
 
     @Override
     public void convert(String jsonInput, String format) {
 
+        JsonNode node=JsonUtil.parseJsonInput(jsonInput);
+        
     }
 
     @Override
@@ -90,17 +96,30 @@ public class JsonServiceImpl implements JsonService {
     }
 
     @Override
-    public void flatten(String jsonInput) {
-
+    public JsonNode flatten(String jsonInput) {
+        JsonNode node=JsonUtil.parseJsonInput(jsonInput);
+        ObjectNode result=ObjectMapperBean.getInstance().createObjectNode();
+        JsonUtil.flattenJsonRecursive(node,result,"");
+        return result;
     }
 
     @Override
-    public void unflatten(String jsonInput) {
-
+    public JsonNode unflatten(String jsonInput) {
+        JsonNode node=JsonUtil.parseJsonInput(jsonInput);
+        JsonNode result=JsonUtil.unflattenJson(node);
     }
 
     @Override
     public void query(String jsonInput, String path) {
 
+    }
+
+    @Override
+    public JsonNode merge(List<String> jsonInputs) {
+        List<JsonNode> nodes=jsonInputs.stream()
+                .map(JsonUtil::parseJsonInput)
+                .toList();
+
+        return JsonUtil.mergeNodes(nodes);
     }
 }
