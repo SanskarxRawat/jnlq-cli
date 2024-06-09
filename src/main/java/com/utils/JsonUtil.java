@@ -202,7 +202,7 @@ public class JsonUtil {
     private static void setNestedValue(ObjectNode parent, String[] path, JsonNode value){
         ObjectNode current=parent;
         Pattern arrayPattern=Pattern.compile("(.*?)\\[(\\d+)]");
-        
+
     }
 
 }
