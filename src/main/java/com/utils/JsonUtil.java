@@ -6,23 +6,37 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.github.underscore.U;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.core.util.StringUtils;
 import jakarta.inject.Singleton;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 @Singleton
 public class JsonUtil {
 
-    public static JsonNode searchByKeyValue(JsonNode jsonData,String key,String value){
+    private static String jsonString;
+
+    public static JsonNode searchByKeyValue(JsonNode jsonData, String key, String value){
         ArrayNode results = JsonNodeFactory.instance.arrayNode();
         if (jsonData.isArray()) {
             for (JsonNode element : jsonData) {
@@ -203,6 +217,103 @@ public class JsonUtil {
         ObjectNode current=parent;
         Pattern arrayPattern=Pattern.compile("(.*?)\\[(\\d+)]");
 
+        for (int i = 0; i < path.length; i++) {
+            String segment = path[i];
+            Matcher matcher = arrayPattern.matcher(segment);
+
+            if (matcher.matches()) {
+                String arrayName = matcher.group(1);
+                int arrayIndex = Integer.parseInt(matcher.group(2));
+
+                if (!current.has(arrayName) || !current.get(arrayName).isArray()) {
+                    current.set(arrayName, ObjectMapperBean.getInstance().createArrayNode());
+                }
+
+                ArrayNode arrayNode = (ArrayNode) current.get(arrayName);
+                while (arrayNode.size() <= arrayIndex) {
+                    arrayNode.addObject();
+                }
+
+                if (i == path.length - 1) {
+                    arrayNode.set(arrayIndex, value);
+                } else {
+                    current = (ObjectNode) arrayNode.get(arrayIndex);
+                }
+            } else {
+                if (i == path.length - 1) {
+                    current.set(segment, value);
+                } else {
+                    if (!current.has(segment) || !current.get(segment).isObject()) {
+                        current.set(segment, ObjectMapperBean.getInstance().createObjectNode());
+                    }
+                    current = (ObjectNode) current.get(segment);
+                }
+            }
+        }
+
+    }
+
+    public static JsonNode queryWithJsonPath(JsonNode node, String jsonPath) {
+        Configuration conf = Configuration.builder()
+                .jsonProvider(new JacksonJsonNodeJsonProvider())
+                .mappingProvider(new JacksonMappingProvider())
+                .options(Option.ALWAYS_RETURN_LIST)
+                .build();
+
+        List<JsonNode> result = JsonPath.using(conf).parse(node.toString()).read(jsonPath);
+
+        if (result.size() == 1) {
+            return result.getFirst();
+        } else {
+            ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode();
+            arrayNode.addAll(result);
+            return arrayNode;
+        }
+    }
+
+    public static void convertToCSV(JsonNode node) throws IOException {
+        try {
+            CsvSchema csvSchema = createCsvSchema(node);
+            CsvMapper csvMapper = new CsvMapper();
+
+            String csv = csvMapper.writerFor(JsonNode.class)
+                    .with(csvSchema)
+                    .writeValueAsString(node);
+
+            String downloadDir = System.getProperty("user.home") + File.separator + "Downloads";
+
+            String fileName = "converted_" + System.currentTimeMillis() + ".csv";
+            Path filePath = Paths.get(downloadDir, fileName);
+
+            Files.write(filePath, csv.getBytes());
+
+            ConsoleUtil.printInfo("CSV file downloaded to: " + filePath);
+        } catch (IOException e) {
+            throw new IOException("Unable to covert Json to CSV");
+        }
+    }
+
+    public static void convertToXML(JsonNode node) {
+        String xmlString = U.jsonToXml(jsonString);
+    }
+
+    public static void convertToYAML(JsonNode node) {
+
+    }
+
+    public static void convertToImage(JsonNode node) {
+
+    }
+
+    public static void convertToPDF(JsonNode node) {
+        
+    }
+
+    private static CsvSchema createCsvSchema(JsonNode node) {
+        CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
+        JsonNode firstObject = node.elements().next();
+        firstObject.fieldNames().forEachRemaining(csvSchemaBuilder::addColumn);
+        return csvSchemaBuilder.build().withHeader();
     }
 
 }

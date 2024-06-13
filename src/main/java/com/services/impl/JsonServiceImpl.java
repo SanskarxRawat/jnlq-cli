@@ -1,10 +1,16 @@
 package com.services.impl;
 
 import com.beans.ObjectMapperBean;
+import com.constants.JsonConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import com.services.JsonService;
+import com.utils.ConsoleUtil;
 import com.utils.JsonUtil;
 import jakarta.inject.Singleton;
 
@@ -13,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 
 @Singleton
 public class JsonServiceImpl implements JsonService {
@@ -50,12 +57,12 @@ public class JsonServiceImpl implements JsonService {
 
     @Override
     public void search(String key, String value) {
-
         JsonNode matchingNodes=JsonUtil.searchByKeyValue(importedJson,key,value);
         if(matchingNodes.isArray()){
             matchingNodes.forEach(System.out::println);
         }else {
-            System.out.println("Matching Nodes: "+matchingNodes);
+            ConsoleUtil.printInfo("Matching Nodes:");
+            ConsoleUtil.printJson(matchingNodes);
         }
     }
 
@@ -63,16 +70,16 @@ public class JsonServiceImpl implements JsonService {
     public void filter(String key, String value) throws JsonProcessingException {
         importedJson = ObjectMapperBean.getInstance().readTree(DEFAULT_JSON);
         JsonNode filteredData = JsonUtil.filterByKeyValue(importedJson, key, value);
-        System.out.println("Filtered data:");
-        System.out.println(filteredData.toPrettyString());
+        ConsoleUtil.printInfo("Filtered data:");
+        ConsoleUtil.printJson(filteredData);
 
     }
 
     @Override
     public void sort(String key, String order) {
         JsonNode sortedData = JsonUtil.sortByKey(importedJson, key, order.equalsIgnoreCase("desc"));
-        System.out.println("Sorted data:");
-        System.out.println(sortedData.toPrettyString());
+        ConsoleUtil.printInfo("Sorted data:");
+        ConsoleUtil.printJson(sortedData);
     }
 
     @Override
@@ -80,19 +87,52 @@ public class JsonServiceImpl implements JsonService {
         JsonNode node=JsonUtil.parseJsonInput(jsonInput);
         assert node != null;
         String prettified=node.toPrettyString();
-        System.out.println(prettified);
+        ConsoleUtil.printInfo(prettified);
     }
 
     @Override
-    public void convert(String jsonInput, String format) {
-
+    public void convert(String jsonInput, String format) throws IOException {
         JsonNode node=JsonUtil.parseJsonInput(jsonInput);
-        
+
+        switch (format.toLowerCase()){
+            case JsonConstants.CSV:
+                JsonUtil.convertToCSV(node);
+                break;
+            case JsonConstants.XML:
+                JsonUtil.convertToXML(node);
+                break;
+            case JsonConstants.YAML:
+                JsonUtil.convertToYAML(node);
+                break;
+            case JsonConstants.IMAGE:
+                JsonUtil.convertToImage(node);
+                break;
+            case JsonConstants.PDF:
+                JsonUtil.convertToPDF(node);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid Output Format");
+        }
+
     }
 
     @Override
     public void validate(String jsonInput, String schemaFile) {
+        JsonNode data=JsonUtil.parseJsonInput(jsonInput);
+        JsonNode schema=JsonUtil.parseJsonInput(schemaFile);
 
+        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+        JsonSchema jsonSchema = factory.getSchema(schema);
+        Set<ValidationMessage> validationResult = jsonSchema.validate(data);
+
+        if (validationResult.isEmpty()) {
+            ConsoleUtil.printInfo("JSON data is valid according to the schema.");
+        } else {
+            ConsoleUtil.printError("JSON data is invalid. Validation errors:");
+            for (ValidationMessage message : validationResult) {
+                ConsoleUtil.printError(message.toString());
+            }
+        }
     }
 
     @Override
@@ -106,12 +146,14 @@ public class JsonServiceImpl implements JsonService {
     @Override
     public JsonNode unflatten(String jsonInput) {
         JsonNode node=JsonUtil.parseJsonInput(jsonInput);
-        JsonNode result=JsonUtil.unflattenJson(node);
+        return JsonUtil.unflattenJson(node);
     }
 
     @Override
     public void query(String jsonInput, String path) {
-
+        JsonNode node=JsonUtil.parseJsonInput(jsonInput);
+        JsonNode result=JsonUtil.queryWithJsonPath(node,path);
+        ConsoleUtil.printJson(result);
     }
 
     @Override

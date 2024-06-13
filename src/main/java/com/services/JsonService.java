@@ -21,7 +21,7 @@ public interface JsonService {
 
     void prettify(String jsonInput);
 
-    void convert(String jsonInput,String format);
+    void convert(String jsonInput,String format) throws IOException;
 
     void validate(String jsonInput,String schemaFile);
 
