@@ -1,6 +1,7 @@
 package com.utils;
 
 import com.beans.ObjectMapperBean;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.github.underscore.U;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
@@ -17,9 +19,28 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.core.util.StringUtils;
 import jakarta.inject.Singleton;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDCIDFontType0;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -271,7 +292,7 @@ public class JsonUtil {
         }
     }
 
-    public static void convertToCSV(JsonNode node) throws IOException {
+    public static void convertToCSV(JsonNode node,String outputFilePath) throws IOException {
         try {
             CsvSchema csvSchema = createCsvSchema(node);
             CsvMapper csvMapper = new CsvMapper();
@@ -280,33 +301,52 @@ public class JsonUtil {
                     .with(csvSchema)
                     .writeValueAsString(node);
 
-            String downloadDir = System.getProperty("user.home") + File.separator + "Downloads";
+            Files.write(Path.of(outputFilePath), csv.getBytes());
 
-            String fileName = "converted_" + System.currentTimeMillis() + ".csv";
-            Path filePath = Paths.get(downloadDir, fileName);
-
-            Files.write(filePath, csv.getBytes());
-
-            ConsoleUtil.printInfo("CSV file downloaded to: " + filePath);
+            ConsoleUtil.printInfo("CSV file downloaded to: " + outputFilePath);
         } catch (IOException e) {
             throw new IOException("Unable to covert Json to CSV");
         }
     }
 
-    public static void convertToXML(JsonNode node) {
-        String xmlString = U.jsonToXml(jsonString);
+    public static void convertToXML(JsonNode node,String outputFilePath) throws ParserConfigurationException, IOException, TransformerException, SAXException {
+        String xmlString = U.jsonToXml(node.toPrettyString());
+        stringToDom(xmlString,outputFilePath);
     }
 
-    public static void convertToYAML(JsonNode node) {
-
+    public static void convertToYAML(JsonNode node,String outputFilePath) throws IOException {
+        String jsonAsYaml = new YAMLMapper().writeValueAsString(node);
+        Files.write(Path.of(outputFilePath), jsonAsYaml.getBytes());
     }
 
-    public static void convertToImage(JsonNode node) {
-
-    }
-
-    public static void convertToPDF(JsonNode node) {
+    public static void convertToImage(JsonNode node,String outputFilePath) {
         
+    }
+
+    public static void convertToPDF(JsonNode node,String outputFilePath) throws IOException {
+        PDDocument document = new PDDocument();
+        PDPage page = new PDPage();
+        document.addPage(page);
+
+        PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+        contentStream.beginText();
+        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+        contentStream.setLeading(14.5f);
+        contentStream.newLineAtOffset(25, 750);
+
+        String jsonText = jsonNodeToFormattedString(node);
+        String[] lines = jsonText.split("\n");
+        for (String line : lines) {
+            contentStream.showText(line);
+            contentStream.newLine();
+        }
+
+        contentStream.endText();
+        contentStream.close();
+
+        document.save(outputFilePath);
+        document.close();
     }
 
     private static CsvSchema createCsvSchema(JsonNode node) {
@@ -314,6 +354,65 @@ public class JsonUtil {
         JsonNode firstObject = node.elements().next();
         firstObject.fieldNames().forEachRemaining(csvSchemaBuilder::addColumn);
         return csvSchemaBuilder.build().withHeader();
+    }
+
+    private static void stringToDom(String xmlSource,String outputFilePath) throws SAXException, ParserConfigurationException, IOException, TransformerException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new InputSource(new StringReader(xmlSource)));
+        TransformerFactory tFactory = TransformerFactory.newInstance();
+        Transformer transformer = tFactory.newTransformer();
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(new File(outputFilePath));
+        transformer.transform(source, result);
+    }
+
+
+    private static String jsonNodeToFormattedString(JsonNode jsonNode) {
+        StringBuilder builder = new StringBuilder();
+        formatJsonNode(jsonNode, builder, 0);
+        return builder.toString();
+    }
+
+    private static void formatJsonNode(JsonNode jsonNode, StringBuilder builder, int indent) {
+        if (jsonNode.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+            builder.append("{\n");
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                addIndent(builder, indent + 1);
+                builder.append("\"").append(field.getKey()).append("\": ");
+                formatJsonNode(field.getValue(), builder, indent + 1);
+                if (fields.hasNext()) {
+                    builder.append(",");
+                }
+                builder.append("\n");
+            }
+            addIndent(builder, indent);
+            builder.append("}");
+        } else if (jsonNode.isArray()) {
+            builder.append("[\n");
+            for (int i = 0; i < jsonNode.size(); i++) {
+                addIndent(builder, indent + 1);
+                formatJsonNode(jsonNode.get(i), builder, indent + 1);
+                if (i < jsonNode.size() - 1) {
+                    builder.append(",");
+                }
+                builder.append("\n");
+            }
+            addIndent(builder, indent);
+            builder.append("]");
+        } else if (jsonNode.isTextual()) {
+            builder.append("\"").append(jsonNode.asText()).append("\"");
+        } else {
+            builder.append(jsonNode.toString());
+        }
+    }
+
+    private static void addIndent(StringBuilder builder, int indent) {
+        for (int i = 0; i < indent; i++) {
+            builder.append("  ");
+        }
     }
 
 }

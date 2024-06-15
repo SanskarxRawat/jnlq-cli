@@ -13,7 +13,10 @@ import com.services.JsonService;
 import com.utils.ConsoleUtil;
 import com.utils.JsonUtil;
 import jakarta.inject.Singleton;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -91,24 +94,24 @@ public class JsonServiceImpl implements JsonService {
     }
 
     @Override
-    public void convert(String jsonInput, String format) throws IOException {
+    public void convert(String jsonInput, String format,String outputFilePath) throws IOException, ParserConfigurationException, TransformerException, SAXException {
         JsonNode node=JsonUtil.parseJsonInput(jsonInput);
 
         switch (format.toLowerCase()){
             case JsonConstants.CSV:
-                JsonUtil.convertToCSV(node);
+                JsonUtil.convertToCSV(node,outputFilePath);
                 break;
             case JsonConstants.XML:
-                JsonUtil.convertToXML(node);
+                JsonUtil.convertToXML(node,outputFilePath);
                 break;
             case JsonConstants.YAML:
-                JsonUtil.convertToYAML(node);
+                JsonUtil.convertToYAML(node,outputFilePath);
                 break;
             case JsonConstants.IMAGE:
-                JsonUtil.convertToImage(node);
+                JsonUtil.convertToImage(node,outputFilePath);
                 break;
             case JsonConstants.PDF:
-                JsonUtil.convertToPDF(node);
+                JsonUtil.convertToPDF(node,outputFilePath);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid Output Format");
